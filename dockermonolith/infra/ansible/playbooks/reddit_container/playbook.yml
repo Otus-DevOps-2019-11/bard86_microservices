@@ -1,0 +1,12 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+    - name: Create otus-reddit app container
+      docker_container:
+        name: reddit
+        image: "dbarsukov/otus-reddit:1.0"
+        ports:
+          - "9292:9292"
+...
