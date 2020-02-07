@@ -1,0 +1,28 @@
+{
+  "variables": {
+    "project_id": null,
+    "source_image_family": null,
+    "machine_type": null
+  },
+  "builders": [{
+    "type": "googlecompute",
+    "project_id": "{{user `project_id`}}",
+    "image_name": "docker-base-{{timestamp}}",
+    "image_family": "docker-base",
+    "source_image_family": "{{user `source_image_family`}}",
+    "zone": "europe-north1-a",
+    "ssh_username": "appuser",
+    "machine_type": "{{user `machine_type`}}",
+    "network": "default",
+    "tags": ["docker-host"],
+    "image_description": "Ubuntu Linux with pre-installed Docker",
+    "disk_size": 10,
+    "disk_type": "pd-standard"
+  }
+  ],
+  "provisioners": [{
+    "type": "ansible",
+    "playbook_file": "{{ pwd }}/ansible/playbooks/docker_ubuntu1604/playbook.yml"
+  }
+  ]
+}

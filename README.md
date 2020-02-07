@@ -127,3 +127,10 @@ https://hub.docker.com/repository/docker/dbarsukov/otus-reddit/general
 
 > after login docker will create a config file with unencrypted password `~/.docker/config.json`, use cred store to protect data: https://docs.docker.com/engine/reference/commandline/login/#credentials-store 
 
+### Ansible, Packer, Terraform
+
+ - add infrastructure as code 
+ - create gcp inventory file
+ - add playbook for docker deployment
+ - add playbook for running container with `reddit-app`
+ - add packer script for creating image with docker

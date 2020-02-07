@@ -2,6 +2,9 @@
 - hosts: all
   become: true
 
+  vars:
+    - ansible_python_interpreter: '/usr/bin/python3'
+
   tasks:
     - name: Add Docker GPG apt Key
       apt_key:
@@ -13,8 +16,12 @@
         repo: deb https://download.docker.com/linux/ubuntu xenial stable
         state: present
 
-    - name: Update apt and install docker-ce, python-docker
+    - name: Update apt and install docker-ce, python3-pip
       apt:
         update_cache: yes
-        name: ["docker-ce", "python-docker"]
+        name: ["docker-ce", "python3-pip"]
+
+    - name: Install docker-py
+      pip:
+        name: docker-py
 ...
