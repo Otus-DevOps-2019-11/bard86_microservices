@@ -1,0 +1,2 @@
+sha256:fb73ba86f54d87a26d6e9832b78d27da68c155f39b3cddb558bc2c8bff69e7ba
+Images are frozen immutable snapshots of live containers. Containers are instances of some image.
