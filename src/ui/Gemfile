@@ -1,5 +1,6 @@
 source 'https://rubygems.org'
 
+gem 'json'
 gem 'sinatra', '~> 2.0.2'
 gem 'sinatra-contrib'
 gem 'haml'

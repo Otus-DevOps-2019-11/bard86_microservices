@@ -176,6 +176,15 @@ docker run -d --network=reddit --network-alias=mongo -v reddit_db:/data/db mongo
 docker run -d --network=reddit --network-alias=post --env POST_DATABASE_HOST=mongo dbarsukov/post:1.0
 docker run -d --network=reddit --network-alias=comment --env COMMENT_DATABASE_HOST=mongo dbarsukov/comment:1.0
 docker run -d --network=reddit -p 9292:9292 dbarsukov/ui:2.0
+
+docker build -t dbarsukov/post:2.0 ./post-py
+docker build -t dbarsukov/comment:2.0 ./comment
+docker build -t dbarsukov/ui:3.0 ./ui
+
+docker run -d --network=reddit --network-alias=mongo -v reddit_db:/data/db mongo:latest
+docker run -d --network=reddit --network-alias=post --env POST_DATABASE_HOST=mongo dbarsukov/post:2.0
+docker run -d --network=reddit --network-alias=comment --env COMMENT_DATABASE_HOST=mongo dbarsukov/comment:2.0
+docker run -d --network=reddit -p 9292:9292 dbarsukov/ui:3.0
 ```
 
 ### Lint Dockerfile

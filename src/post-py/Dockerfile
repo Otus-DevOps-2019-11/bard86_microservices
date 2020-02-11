@@ -1,5 +1,7 @@
 FROM python:3.6.0-alpine
 
+LABEL maintainer="Denis Barsukov <job.dbarsukov@gmail.com>"
+
 WORKDIR /app
 COPY . /app
 
