@@ -59,13 +59,13 @@ $ sudo docker rmi <image_id>
 
 > docker run = create + run + attach
 
-> ps axf 
+> ps axf
 
 
 ### init Google Cloud Account
 
 ```console
-$ gcloud init 
+$ gcloud init
 $ gcloud auth application-default login
 ```
 > Credentials saved to file: `~/.config/gcloud/application_default_credentials.json`
@@ -92,14 +92,14 @@ $ docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/ubuntu-1604-xenial-v20200129 \
 --google-machine-type n1-standard-1 \
 --google-zone europe-west1-b \
-docker-host 
+docker-host
 $ docker-machine ls
 $ eval $(docker-machine env docker-host)
 ```
 > gcloud compute images list --filter="name=ubuntu-1604" --uri
 
 > gcloud compute machine-types list | grep europe-west1-b
-    
+
 ###  create reddit image and run container
 
 ```console
@@ -125,12 +125,65 @@ $ docker push dbarsukov/otus-reddit:1.0
 
 https://hub.docker.com/repository/docker/dbarsukov/otus-reddit/general
 
-> after login docker will create a config file with unencrypted password `~/.docker/config.json`, use cred store to protect data: https://docs.docker.com/engine/reference/commandline/login/#credentials-store 
+> after login docker will create a config file with unencrypted password `~/.docker/config.json`, use cred store to protect data: https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 ### Ansible, Packer, Terraform
 
- - add infrastructure as code 
+ - add infrastructure as code
  - create gcp inventory file
  - add playbook for docker deployment
  - add playbook for running container with `reddit-app`
  - add packer script for creating image with docker
+
+--------------------------------------------------------
+
+## Docker - 3
+
+- connect to GCE docker-host with docker-machine `eval ($docker-machine env docker-host)`
+- create Dockerfile for each microservice
+- validate Dockerfile with hadolint, fix remarks
+- build images
+- play with container network alias and env variables (`$ docker run --env POST_DATABASE_HOST=mongo ...`)
+- mount volume (`$ docker volume create reddit_db`, `$ docker run -v reddit_db:/data/db ...`)
+- optimize image size
+
+```console
+docker build -t dbarsukov/post:1.0 ./post-py
+docker build -t dbarsukov/comment:1.0 ./comment
+docker build -t dbarsukov/ui:1.0 ./ui
+
+docker network create reddit
+
+docker run -d --network=reddit --network-alias=post_db --network-alias=comment_db mongo:latest
+docker run -d --network=reddit --network-alias=post dbarsukov/post:1.0
+docker run -d --network=reddit --network-alias=comment dbarsukov/comment:1.0
+docker run -d --network=reddit -p 9292:9292 dbarsukov/ui:1.0
+
+docker kill $(docker ps -q)
+
+docker run -d --network=reddit --network-alias=mongo mongo:latest
+docker run -d --network=reddit --network-alias=post --env POST_DATABASE_HOST=mongo dbarsukov/post:1.0
+docker run -d --network=reddit --network-alias=comment --env COMMENT_DATABASE_HOST=mongo dbarsukov/comment:1.0
+docker run -d --network=reddit -p 9292:9292 dbarsukov/ui:1.0
+
+docker build -t dbarsukov/ui:2.0 ./ui
+
+docker kill $(docker ps -q)
+
+docker volume create reddit_db
+
+docker run -d --network=reddit --network-alias=mongo -v reddit_db:/data/db mongo:latest
+docker run -d --network=reddit --network-alias=post --env POST_DATABASE_HOST=mongo dbarsukov/post:1.0
+docker run -d --network=reddit --network-alias=comment --env COMMENT_DATABASE_HOST=mongo dbarsukov/comment:1.0
+docker run -d --network=reddit -p 9292:9292 dbarsukov/ui:2.0
+```
+
+### Lint Dockerfile
+
+https://www.fromlatest.io/#/ or
+https://github.com/hadolint/hadolint
+
+```console
+docker pull hadolint/hadolint
+docker run --rm -i hadolint/hadolint < Dockerfile
+```
