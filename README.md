@@ -139,7 +139,7 @@ https://hub.docker.com/repository/docker/dbarsukov/otus-reddit/general
 
 ## Docker - 3
 
-- connect to GCE docker-host with docker-machine `eval ($docker-machine env docker-host)`
+- connect to GCE docker-host with docker-machine `eval $(docker-machine env docker-host)`
 - create Dockerfile for each microservice
 - validate Dockerfile with hadolint, fix remarks
 - build images
@@ -195,4 +195,83 @@ https://github.com/hadolint/hadolint
 ```console
 docker pull hadolint/hadolint
 docker run --rm -i hadolint/hadolint < Dockerfile
+```
+
+--------------------------------------------------------
+
+## Docker - 4
+
+### Docker Networks
+
+Network types:
+ - none
+ - host
+ - bridge
+
+### Experiment no. 1
+
+explore network topology (network types: none, host)
+```console
+$ docker run -ti --rm --network none joffotron/docker-net-tools -c ifconfig
+$ docker run -ti --rm --network host joffotron/docker-net-tools -c ifconfig
+$ docker-machine ssh docker-host ifconfig
+$ docker run --network host -d nginx
+```
+### Experiment no. 2
+
+explore namespaces
+```console
+$ sudo ln -s /var/run/docker/netns /var/run/netns
+$ sudo ip netns
+$ ip netns exec <namespace> <command>
+```
+
+### Run containers in bridge network
+
+```console
+docker network create reddit --driver bridge
+
+docker run -d --network=reddit --name=mongo_db --network-alias=post_db --network-alias=comment_db -v reddit_db:/data/db mongo:latest
+docker run -d --network=reddit --name=post dbarsukov/post:2.0
+docker run -d --network=reddit --name=comment dbarsukov/comment:2.0
+docker run -d --network=reddit --name=ui -p 9292:9292 dbarsukov/ui:3.0
+```
+
+### Run containers in different networks
+
+```console
+docker network create back_net --subnet=10.0.2.0/24
+docker network create front_net --subnet=10.0.1.0/24
+
+docker run -d --network=back_net --name=mongo_db --network-alias=post_db --network-alias=comment_db -v reddit_db:/data/db mongo:latest
+docker run -d --network=back_net --name=post dbarsukov/post:2.0
+docker run -d --network=back_net --name=comment dbarsukov/comment:2.0
+docker run -d --network=front_net --name=ui -p 9292:9292 dbarsukov/ui:3.0
+
+docker network connect front_net post
+docker network connect front_net comment
+```
+
+### Experiment no. 3
+
+explore network topology (network type: bridge)
+```console
+docker-machine ssh docker-host && sudo apt-get update && sudo apt-get install bridge-utils
+docker network ls
+ifconfig | grep br
+brctl show <interface>
+sudo iptables -nL -t nat
+ps ax | grep docker-proxy
+```
+
+### Docker-compose
+
+- pip install docker-compose
+- create `docker-compose.yml` to describe how to build images and run containers with specific order
+- create `.env` file for storing parameters like port, user name, image version
+- create `docker-compose.override.yml` to override configuration
+
+```console
+docker-compose --project-name=reddit up -d
+docker-compose ps
 ```
