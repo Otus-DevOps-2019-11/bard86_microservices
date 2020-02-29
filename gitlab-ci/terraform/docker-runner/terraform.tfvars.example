@@ -1,0 +1,4 @@
+project          = "docker-123456"
+public_key_path  = "~/.ssh/appuser.pub"
+disk_image       = "docker-base"
+instance_count   = 2

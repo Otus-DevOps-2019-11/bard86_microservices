@@ -1,0 +1,17 @@
+plugin: gcp_compute
+auth_kind: serviceaccount
+zones:
+  - europe-west3-a
+projects:
+  - docker-267311
+filters: []
+scopes:
+  - 'https://www.googleapis.com/auth/compute.readonly'
+groups:
+  branches: "'branch-' in name"
+  docker_runners: "'gitlab-ci-runner-' in name"
+hostnames:
+  - name
+compose:
+  ansible_host: networkInterfaces[0].accessConfigs[0].natIP
+  ansible_internal_ip: networkInterfaces[0].networkIP

@@ -40,7 +40,7 @@ $ sudo docker info
 $ sudo docker ps
 $ sudo docker ps -a
 $ sudo docker images
-$ sudo docker run -rm -it ubuntu:16.04 /bin/bash
+$ sudo docker run --rm -it ubuntu:16.04 /bin/bash
 $ sudo docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.CreatedAt}}\t{{.Names}}"
 $ sudo docker start <u_container_id>
 $ sudo docker attach <u_container_id>
