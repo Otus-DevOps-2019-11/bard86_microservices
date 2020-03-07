@@ -3,6 +3,7 @@ image: docker:19.03.1
 stages:
   - build
   - test
+  - save_artifacts
   - review
   - stage
   - production
@@ -23,15 +24,10 @@ build_job:
   stage: build
   before_script:
     - docker info
-    - docker login -u $DOCKER_HUB_ACCOUNT -p $DOCKER_HUB_PASSWORD
   script:
     - echo 'Building'
     - cd docker-monolith
     - docker build -t $APP_NAME:latest .
-  after_script:
-    - echo DOCKER_HUB_IMAGE = $DOCKER_HUB_IMAGE
-    - docker tag $APP_NAME:latest $DOCKER_HUB_IMAGE
-    - docker push $DOCKER_HUB_IMAGE
 
 test_unit_job:
   image: ruby:2.4.2
@@ -50,6 +46,18 @@ test_integration_job:
   stage: test
   script:
     - echo 'Test integration'
+
+save_artifacts_job:
+  services:
+    - docker:19.03.1-dind
+  stage: save_artifacts
+  before_script:
+    - docker info
+    - docker login -u $DOCKER_HUB_ACCOUNT -p $DOCKER_HUB_PASSWORD
+  script:
+    - echo DOCKER_HUB_IMAGE = $DOCKER_HUB_IMAGE
+    - docker tag $APP_NAME:latest $DOCKER_HUB_IMAGE
+    - docker push $DOCKER_HUB_IMAGE
 
 deploy_dev_job:
   stage: review
