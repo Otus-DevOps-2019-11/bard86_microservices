@@ -281,4 +281,9 @@ docker-compose ps
 ## Gitlab-CI
 
 - add pipeline definition `.gitlab-ci.yml`
-- now, after push commit to gitlab ci repo we can build app docker image, run tests,     
+- after push commit to gitlab ci repo we can build app docker image, run tests, save image at docker hub, deploy app to new temporary instance, deploy app to dev/stage/prod envs     
+- temporary instance will be remove after 1 week or if review has been finished
+- every pipeline run will be finished with cleanup job (it will save disk space at runners)
+- we can create as many runners as we want by running terraform plus ansible
+- integrate gitlab-ci with slack. now we can receive events and alerts to personal channel (https://devops-team-otus.slack.com/archives/CRGMFUEKT)
+
