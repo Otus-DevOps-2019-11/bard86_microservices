@@ -275,3 +275,10 @@ ps ax | grep docker-proxy
 docker-compose --project-name=reddit up -d
 docker-compose ps
 ```
+
+--------------------------------------------------------
+
+## Gitlab-CI
+
+- add pipeline definition `.gitlab-ci.yml`
+- now, after push commit to gitlab ci repo we can build app docker image, run tests,     
