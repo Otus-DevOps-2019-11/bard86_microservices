@@ -5,72 +5,50 @@ services:
     volumes:
       - post_db:/data/db
     networks:
-      - internal_network
+      - backend
 
   ui:
-    image: ${USERNAME}/ui:${UI_IMAGE_VERSION}
+    image: ${USER_NAME}/ui:${UI_IMAGE_VERSION}
     ports:
       - ${PUMA_PORT}:${PUMA_PORT}/tcp
     networks:
-      - external_network
-      - internal_network
+      - frontend
+      - backend
 
   post:
-    image: ${USERNAME}/post:${POST_IMAGE_VERSION}
+    image: ${USER_NAME}/post:${POST_IMAGE_VERSION}
     networks:
-      - internal_network
+      - backend
 
   comment:
-    image: ${USERNAME}/comment:${COMMENT_IMAGE_VERSION}
+    image: ${USER_NAME}/comment:${COMMENT_IMAGE_VERSION}
+    networks:
+      - backend
+
+  alertmanager:
+    image: ${USER_NAME}/alertmanager
     networks:
       - internal_network
-
-  prometheus:
-    image: ${USERNAME}/prometheus
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
     ports:
-      - '9090:9090'
+      - 9093:9093
+
+  alertmanager:
+    image: ${USER_NAME}/alertmanager
     networks:
       - internal_network
-      - external_network
-    volumes:
-      - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention=1d'
-
-  node_exporter:
-    image: prom/node-exporter:v0.15.2
-    user: root
-    networks:
-      - internal_network
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
-
-  mongodb_exporter:
-    image: bitnami/mongodb-exporter:${MONGO_EXPORTER_VERSION}
-    networks:
-      - internal_network
-    environment:
-      MONGODB_URI: "mongodb://post_db:27017"
-
-  cloudprober_exporter:
-    image: ${USERNAME}/cloudprober_exporter
-    networks:
-      - internal_network
+      - '--config.file=/etc/alertmanager/config.yml'
+    ports:
+      - 9093:9093
 
 volumes:
   post_db:
   prometheus_data:
 
 networks:
-  internal_network:
-    external: false
-  external_network:
+  backend:
+    external: true
+  frontend:
     external: true
