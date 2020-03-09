@@ -21,5 +21,5 @@ scrape_configs:
   - job_name: 'node'
     static_configs:
       - targets:
-        - 'node-exporter:9100'
+          - 'node_exporter:9100'
 ...
