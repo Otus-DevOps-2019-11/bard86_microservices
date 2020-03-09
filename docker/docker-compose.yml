@@ -53,6 +53,18 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
 
+  mongodb_exporter:
+    image: bitnami/mongodb-exporter:${MONGO_EXPORTER_VERSION}
+    networks:
+      - internal_network
+    environment:
+      MONGODB_URI: "mongodb://post_db:27017"
+
+  cloudprober_exporter:
+    image: ${USERNAME}/cloudprober_exporter
+    networks:
+      - internal_network
+
 volumes:
   post_db:
   prometheus_data:

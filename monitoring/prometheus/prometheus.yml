@@ -22,4 +22,15 @@ scrape_configs:
     static_configs:
       - targets:
           - 'node_exporter:9100'
+
+  - job_name: 'mongodb'
+    static_configs:
+      - targets:
+          - 'mongodb_exporter:9216'
+
+  - job_name: 'cloudprober'
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - 'cloudprober_exporter:9313'
 ...
