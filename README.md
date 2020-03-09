@@ -287,3 +287,182 @@ docker-compose ps
 - we can create as many runners as we want by running terraform plus ansible
 - integrate gitlab-ci with slack. now we can receive events and alerts to personal channel (https://devops-team-otus.slack.com/archives/CRGMFUEKT)
 
+
+--------------------------------------------------------
+
+## Monitoring-1
+
+- run prometheus `docker run --rm -p 9090:9090 -d --name prometheus prom/prometheus:v2.1.0`
+- set targets in `prometheus.yml`
+```yaml
+---
+global:
+  scrape_interval: '5s'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:9090'
+
+  - job_name: 'ui'
+    static_configs:
+      - targets:
+          - 'ui:9292'
+
+  - job_name: 'comment'
+    static_configs:
+      - targets:
+          - 'comment:9292'
+
+  - job_name: 'node'
+    static_configs:
+      - targets:
+          - 'node_exporter:9100'
+
+  - job_name: 'mongodb'
+    static_configs:
+      - targets:
+          - 'mongodb_exporter:9216'
+
+  - job_name: 'cloudprober'
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - 'cloudprober_exporter:9313'
+...
+```
+
+- create image with new config
+```dockerfile
+FROM prom/prometheus:v2.1.0
+ADD prometheus.yml /etc/prometheus/
+```
+
+- add to `docker-compose.yml` monitoring section
+
+```yaml
+  prometheus:
+    image: ${USERNAME}/prometheus
+    ports:
+      - '9090:9090'
+    networks:
+      - internal_network
+      - external_network
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=1d'
+
+ node_exporter:
+    image: prom/node-exporter:v0.15.2
+    user: root
+    networks:
+      - internal_network
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+
+  mongodb_exporter:
+    image: bitnami/mongodb-exporter:${MONGO_EXPORTER_VERSION}
+    networks:
+      - internal_network
+    environment:
+      MONGODB_URI: "mongodb://post_db:27017"
+
+  cloudprober_exporter:
+    image: ${USERNAME}/cloudprober_exporter
+    networks:
+      - internal_network
+```
+
+-create cloudprober config
+```
+probe {
+    name: "ui_page"
+    type: HTTP
+    targets {
+        host_names: "ui"
+    }
+    http_probe {
+        protocol: HTTP
+        port: 9292
+    }
+    interval_msec: 5000
+    timeout_msec: 1000
+}
+
+probe {
+    name: "comment"
+    type: HTTP
+    targets {
+        host_names: "comment"
+    }
+    http_probe {
+        protocol: HTTP
+        port: 9292
+    }
+    interval_msec: 5000
+    timeout_msec: 1000
+}
+```
+
+- create Dockerfile for cloudprober app
+```dockerfile
+FROM cloudprober/cloudprober
+COPY cloudprober.cfg /etc/cloudprober.cfg
+```
+
+- create Makefile for build and push images into Dockerhub
+```makefile
+.DEFAULT_GOAL := info
+
+USERNAME ?= dbarsukov
+
+info:
+	@echo Build reddit app and infra docker images and push it to Dockerhub. Login before push.
+
+all: build push
+
+build: ui comment post prometheus cloudprober
+
+ui:
+	cd src/ui && docker build -t ${USERNAME}/ui .
+
+comment:
+	cd src/comment && docker build -t ${USERNAME}/comment .
+
+post:
+	cd src/post-py && docker build -t ${USERNAME}/post .
+
+prometheus:
+	cd monitoring/prometheus && docker build -t ${USERNAME}/prometheus .
+
+cloudprober:
+	cd monitoring/cloudprober && docker build -t ${USERNAME}/cloudprober .
+
+push: ui-push comment-push post-push prometheus-push cloudprober-push
+
+ui-push:
+	docker push ${USERNAME}/ui:latest
+
+comment-push:
+	docker push ${USERNAME}/comment:latest
+
+post-push:
+	docker push ${USERNAME}/post:latest
+
+prometheus-push:
+	docker push ${USERNAME}/ui:latest
+
+cloudprober-push:
+	docker push ${USERNAME}/cloudprober:latest
+
+```
