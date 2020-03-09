@@ -464,5 +464,4 @@ prometheus-push:
 
 cloudprober-push:
 	docker push ${USERNAME}/cloudprober:latest
-
 ```
