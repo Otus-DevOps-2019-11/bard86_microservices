@@ -33,4 +33,9 @@ scrape_configs:
     static_configs:
       - targets:
           - 'cloudprober_exporter:9313'
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets:
+        - 'cadvisor:8080'
 ...
