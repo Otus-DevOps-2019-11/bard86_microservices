@@ -36,7 +36,7 @@ services:
       MONGODB_URI: "mongodb://post_db:27017"
 
   cloudprober_exporter:
-    image: ${USERNAME}/cloudprober_exporter
+    image: ${USERNAME}/cloudprober
     networks:
       - internal_network
 
