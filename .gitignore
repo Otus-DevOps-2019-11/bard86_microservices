@@ -5,3 +5,9 @@
 .terraform/
 .terraform.tfstate.lock.info
 .variables.json
+.env
+build_info.txt
+prometheus/
+
+## python specific
+*.pyc
