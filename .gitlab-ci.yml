@@ -1,0 +1,144 @@
+image: docker:19.03.1
+
+stages:
+  - build
+  - test
+  - save_artifacts
+  - review
+  - stage
+  - production
+  - cleanup
+
+variables:
+  DOCKER_HUB_ACCOUNT: dbarsukov
+  APP_NAME: otus-reddit
+  MAJOR_VERSION: 1
+  MINOR_VERSION: 0
+  DOCKER_HUB_IMAGE: '$DOCKER_HUB_ACCOUNT/$APP_NAME:$MAJOR_VERSION.$MINOR_VERSION.$CI_PIPELINE_IID'
+  DOCKER_TLS_CERTDIR: ""
+  VARS: '{"version":"$MAJOR_VERSION.$MINOR_VERSION.$CI_PIPELINE_ID"}'
+
+build_job:
+  services:
+    - docker:19.03.1-dind
+  stage: build
+  before_script:
+    - docker info
+  script:
+    - echo 'Building'
+    - cd docker-monolith
+    - docker build -t $APP_NAME:latest .
+
+test_unit_job:
+  image: ruby:2.4.2
+  stage: test
+  variables:
+    DATABASE_URL: 'mongodb://mongo/user_posts'
+  services:
+    - mongo:latest
+  script:
+    - echo 'Unit tests'
+    - cd reddit
+    - bundle install
+    - ruby simpletest.rb
+
+test_integration_job:
+  stage: test
+  script:
+    - echo 'Test integration'
+
+save_artifacts_job:
+  services:
+    - docker:19.03.1-dind
+  stage: save_artifacts
+  before_script:
+    - docker info
+    - docker login -u $DOCKER_HUB_ACCOUNT -p $DOCKER_HUB_PASSWORD
+  script:
+    - echo DOCKER_HUB_IMAGE = $DOCKER_HUB_IMAGE
+    - docker tag $APP_NAME:latest $DOCKER_HUB_IMAGE
+    - docker push $DOCKER_HUB_IMAGE
+
+deploy_dev_job:
+  stage: review
+  script:
+    - echo 'Deploy'
+  environment:
+    name: dev
+    url: http://dev.example.com
+
+branch_review:
+  image: dbarsukov/devops-tools:latest
+  stage: review
+#  variables:
+#    TF_LOG: TRACE
+  before_script:
+    - echo GCP_SERVICE_ACCOUNT_FILE
+    - gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+    - gcloud auth list
+    - terraform --version
+    - chmod -R a-w ./gitlab-ci/ansible
+  script:
+    - echo Create new instance for branch $CI_COMMIT_REF_NAME
+    - cd gitlab-ci/terraform/gcp-ce-new-branch-instance
+    - terraform init
+    - terraform validate
+    - terraform plan -var-file terraform.tfvars.example -var branch_name=$CI_COMMIT_REF_NAME -var public_key_path=$SSH_PUBLIC_KEY
+    - terraform apply -auto-approve=true -var-file terraform.tfvars.example -var branch_name=$CI_COMMIT_REF_NAME -var public_key_path=$SSH_PUBLIC_KEY
+  after_script:
+    - echo Deploy container $CI_COMMIT_REF_NAME to individual instance
+    - cd gitlab-ci/ansible
+    - ansible-inventory --graph
+    - ansible-playbook playbooks/reddit_container/playbook.yml -v --key-file "$ANSIBLE_SSH_PRIVATE_KEY_FILE" -l branch-$CI_COMMIT_REF_NAME --extra-vars $VARS
+  environment:
+    name: branch/$CI_COMMIT_REF_NAME
+    url: http://$CI_ENVIRONMENT_SLUG.example.com
+    on_stop: stop_review
+    auto_stop_in: 1 week
+  only:
+    - branches
+  except:
+    - master
+
+stop_review:
+  image: dbarsukov/devops-tools:latest
+  stage: review
+  script:
+    - echo "Remove review app & instance ..."
+    - cd gitlab-ci/terraform/gcp-ce-new-branch-instance
+    - terraform init
+    - terraform destroy -auto-approve=true -var-file terraform.tfvars.example -var branch_name=$CI_COMMIT_REF_NAME -target google_compute_instance.app
+  when: manual
+  environment:
+    name: branch/$CI_COMMIT_REF_NAME
+    action: stop
+
+staging:
+  stage: stage
+  when: manual
+  only:
+    - /^\d+\.\d+\.\d+/
+  script:
+    - echo 'Deploy to stage'
+  environment:
+    name: dev
+    url: http://beta.example.com
+
+production:
+  stage: production
+  when: manual
+  only:
+    - /^\d+\.\d+\.\d+/
+  script:
+    - echo 'Deploy to prod'
+  environment:
+    name: dev
+    url: http://example.com
+
+cleanup:
+  stage: cleanup
+  when: always
+  script:
+    - echo Cleanup...
+    - docker rmi $APP_NAME:latest
+    - docker rmi $DOCKER_HUB_IMAGE

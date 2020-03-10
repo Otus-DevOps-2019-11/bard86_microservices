@@ -40,7 +40,7 @@ $ sudo docker info
 $ sudo docker ps
 $ sudo docker ps -a
 $ sudo docker images
-$ sudo docker run -rm -it ubuntu:16.04 /bin/bash
+$ sudo docker run --rm -it ubuntu:16.04 /bin/bash
 $ sudo docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.CreatedAt}}\t{{.Names}}"
 $ sudo docker start <u_container_id>
 $ sudo docker attach <u_container_id>
@@ -275,3 +275,15 @@ ps ax | grep docker-proxy
 docker-compose --project-name=reddit up -d
 docker-compose ps
 ```
+
+--------------------------------------------------------
+
+## Gitlab-CI
+
+- add pipeline definition `.gitlab-ci.yml`
+- after push commit to gitlab ci repo we can build app docker image, run tests, save image at docker hub, deploy app to new temporary instance, deploy app to dev/stage/prod envs     
+- temporary instance will be remove after 1 week or if review has been finished
+- every pipeline run will be finished with cleanup job (it will save disk space at runners)
+- we can create as many runners as we want by running terraform plus ansible
+- integrate gitlab-ci with slack. now we can receive events and alerts to personal channel (https://devops-team-otus.slack.com/archives/CRGMFUEKT)
+

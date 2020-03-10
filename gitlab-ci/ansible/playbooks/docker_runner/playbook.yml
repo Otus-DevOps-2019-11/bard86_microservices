@@ -1,0 +1,27 @@
+---
+- hosts: docker_runners
+  become: true
+
+  vars:
+    - ansible_python_interpreter: '/usr/bin/python3'
+
+  tasks:
+    - name: Register gitlab-ci runner
+      docker_container:
+        name: gitlab-runner
+        image: gitlab/gitlab-runner:v12.8.0
+        command: register --non-interactive --url "{{ gitlab_addr }}" --registration-token "{{ reg_token }}" --executor "docker" --docker-image "alpine:3.11" --description "Docker runner {{ inventory_hostname }}" --tag-list "docker,linux,gcp" --run-untagged="true" --locked="false" --docker-privileged
+        volumes:
+          - /srv/gitlab-runner/config:/etc/gitlab-runner
+
+    - name: Run gitlab-runner
+      docker_container:
+        name: gitlab-runner
+        image: gitlab/gitlab-runner:v12.8.0
+        detach: yes
+        restart_policy: always
+        state: started
+        volumes:
+          - /srv/gitlab-runner/config:/etc/gitlab-runner
+          - /var/run/docker.sock:/var/run/docker.sock
+...

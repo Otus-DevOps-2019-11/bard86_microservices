@@ -1,0 +1,3 @@
+project          = "docker-267311"
+public_key_path  = "~/.ssh/appuser.pub"
+disk_image       = "docker-base"

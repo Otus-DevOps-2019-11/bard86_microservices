@@ -1,0 +1,16 @@
+---
+- hosts: all
+  become: true
+
+  vars:
+    - ansible_python_interpreter: '/usr/bin/python3'
+    - version: latest
+
+  tasks:
+    - name: Create otus-reddit app container
+      docker_container:
+        name: reddit
+        image: dbarsukov/otus-reddit:{{ version  }}
+        ports:
+          - "9292:9292"
+...
