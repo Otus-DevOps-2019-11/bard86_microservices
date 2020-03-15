@@ -10,13 +10,13 @@ all: build push
 build: ui comment post prometheus cloudprober alertmanager
 
 ui:
-	cd src/ui && docker_build.sh
+	cd src/ui && bash docker_build.sh
 
 comment:
-	cd src/comment && docker_build.sh
+	cd src/comment && bash docker_build.sh
 
 post:
-	cd src/post-py && docker_build.sh
+	cd src/post-py && bash docker_build.sh
 
 prometheus:
 	cd monitoring/prometheus && docker build -t ${USER_NAME}/prometheus .
