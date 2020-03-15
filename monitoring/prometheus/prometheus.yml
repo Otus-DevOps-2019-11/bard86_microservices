@@ -58,4 +58,8 @@ scrape_configs:
     static_configs:
       - targets: ['35.240.64.41:9323']
 
+  - job_name: 'telegraf'
+    static_configs:
+      - targets: ['telegraf:9126']
+
 ...

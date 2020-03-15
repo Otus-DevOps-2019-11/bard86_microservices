@@ -66,6 +66,20 @@ services:
     ports:
       - 3000:3000
 
+  telegraf:
+    image: ${USER_NAME}/telegraf
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    networks:
+      - internal_network
+
+  influxdb:
+    image: influxdb
+    volumes:
+      - 'influxdb_data:/var/lib/influxdb'
+    networks:
+      - internal_network
+
 volumes:
   post_db:
   prometheus_data:

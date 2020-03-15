@@ -27,7 +27,10 @@ cloudprober:
 alertmanager:
 	cd monitoring/alertmanager && docker build -t ${USER_NAME}/alertmanager .
 
-push: ui-push comment-push post-push prometheus-push cloudprober-push alertmanager-push
+telegraf:
+	cd monitoring/telegraf && docker build -t ${USER_NAME}/telegraf .
+
+push: ui-push comment-push post-push prometheus-push cloudprober-push alertmanager-push telegraf-push
 
 ui-push:
 	docker push ${USER_NAME}/ui:latest
@@ -46,3 +49,7 @@ cloudprober-push:
 
 alertmanager-push:
 	docker push ${USER_NAME}/alertmanager:latest
+
+telegraf-push:
+	docker push ${USER_NAME}/telegraf:latest
+
