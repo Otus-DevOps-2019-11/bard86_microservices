@@ -56,7 +56,7 @@ scrape_configs:
 
   - job_name: 'docker'
     static_configs:
-      - targets: ['35.240.64.41:9323']
+      - targets: ['localhost:9323']
 
   - job_name: 'telegraf'
     static_configs:

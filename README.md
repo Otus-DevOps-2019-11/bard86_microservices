@@ -465,3 +465,6 @@ prometheus-push:
 cloudprober-push:
 	docker push ${USERNAME}/cloudprober:latest
 ```
+
+sudo kill -SIGHUP $(pidof dockerd)
+tail /var/log/syslog
