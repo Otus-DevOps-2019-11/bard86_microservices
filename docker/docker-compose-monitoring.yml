@@ -1,7 +1,7 @@
 version: '3.3'
 services:
   prometheus:
-    image: ${USERNAME}/prometheus
+    image: ${USER_NAME}/prometheus
     ports:
       - '9090:9090'
     networks:
@@ -36,7 +36,7 @@ services:
       MONGODB_URI: "mongodb://post_db:27017"
 
   cloudprober_exporter:
-    image: ${USERNAME}/cloudprober
+    image: ${USER_NAME}/cloudprober
     networks:
       - internal_network
 

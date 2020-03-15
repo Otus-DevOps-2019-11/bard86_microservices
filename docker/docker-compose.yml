@@ -8,7 +8,7 @@ services:
       - internal_network
 
   ui:
-    image: ${USERNAME}/ui:${UI_IMAGE_VERSION}
+    image: ${USER_NAME}/ui:${UI_IMAGE_VERSION}
     ports:
       - ${PUMA_PORT}:${PUMA_PORT}/tcp
     networks:
@@ -16,17 +16,17 @@ services:
       - internal_network
 
   post:
-    image: ${USERNAME}/post:${POST_IMAGE_VERSION}
+    image: ${USER_NAME}/post:${POST_IMAGE_VERSION}
     networks:
       - internal_network
 
   comment:
-    image: ${USERNAME}/comment:${COMMENT_IMAGE_VERSION}
+    image: ${USER_NAME}/comment:${COMMENT_IMAGE_VERSION}
     networks:
       - internal_network
 
   alertmanager:
-    image: ${USERNAME}/alertmanager
+    image: ${USER_NAME}/alertmanager
     networks:
       - internal_network
     command:
