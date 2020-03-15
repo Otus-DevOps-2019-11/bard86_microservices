@@ -53,4 +53,9 @@ scrape_configs:
     static_configs:
       - targets:
           - 'post:5000'
+
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['35.240.64.41:9323']
+
 ...
