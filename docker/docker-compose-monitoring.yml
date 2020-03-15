@@ -76,7 +76,7 @@ services:
   influxdb:
     image: influxdb
     volumes:
-      - 'influxdb_data:/var/lib/influxdb'
+      - influxdb_data:/var/lib/influxdb
     networks:
       - internal_network
 
@@ -84,6 +84,7 @@ volumes:
   post_db:
   prometheus_data:
   grafana_data:
+  influxdb_data:
 
 networks:
   internal_network:

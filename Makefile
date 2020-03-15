@@ -7,7 +7,7 @@ info:
 
 all: build push
 
-build: ui comment post prometheus cloudprober alertmanager
+build: ui comment post prometheus cloudprober alertmanager telegraf
 
 ui:
 	cd src/ui && bash docker_build.sh
