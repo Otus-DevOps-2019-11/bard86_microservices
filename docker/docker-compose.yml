@@ -26,7 +26,7 @@ services:
       - internal_network
 
   alertmanager:
-    image: ${USER_NAME}/alertmanager
+    image: ${USERNAME}/alertmanager
     networks:
       - internal_network
     command:
