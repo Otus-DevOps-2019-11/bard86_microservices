@@ -14,7 +14,7 @@ run:
 stop: stop-app stop-monitoring
 
 stop-app:
-	cd docker && docker-compose
+	cd docker && docker-compose down
 
 stop-monitoring:
 	cd docker && docker-compose -f docker-compose-monitoring.yml down
