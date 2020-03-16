@@ -468,3 +468,6 @@ cloudprober-push:
 
 sudo kill -SIGHUP $(pidof dockerd)
 tail /var/log/syslog
+
+systemctl status docker
+journalctl -xe
