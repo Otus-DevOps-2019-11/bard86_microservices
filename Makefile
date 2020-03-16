@@ -8,8 +8,13 @@ info:
 
 all: build push run
 
-run:
-	cd docker && docker-compose up -d && docker-compose -f docker-compose-monitoring.yml up -d
+run: run-app run-monitring
+
+run-monitring:
+	cd docker && docker-compose -f docker-compose-monitoring.yml up -d
+
+run-app:
+	cd docker && docker-compose up -d
 
 stop: stop-app stop-monitoring
 
