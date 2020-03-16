@@ -11,12 +11,12 @@ all: build push run
 run:
 	cd docker && docker-compose up -d && docker-compose -f docker-compose-monitoring.yml up -d
 
-stop: stop-app stop-monitoring
+stop: stopapp stopmonitoring
 
-stop-app:
+stopapp:
 	cd docker && docker-compose
 
-stop-monitoring:
+stopmonitoring:
 	cd docker && docker-compose -f docker-compose-monitoring.yml down
 
 build: ui comment post prometheus cloudprober alertmanager telegraf
