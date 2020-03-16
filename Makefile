@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := info
 
 USER_NAME ?= dbarsukov
+export USER_NAME
 
 info:
 	@echo Build reddit app and infra docker images and push it to Dockerhub. Login before push.
