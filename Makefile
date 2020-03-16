@@ -8,9 +8,9 @@ info:
 
 all: build push run
 
-run: run-app run-monitring
+run: run-app run-monitoring
 
-run-monitring:
+run-monitoring:
 	cd docker && docker-compose -f docker-compose-monitoring.yml up -d
 
 run-app:
