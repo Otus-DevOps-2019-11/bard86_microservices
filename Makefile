@@ -5,7 +5,10 @@ USER_NAME ?= dbarsukov
 info:
 	@echo Build reddit app and infra docker images and push it to Dockerhub. Login before push.
 
-all: build push
+all: build push run
+
+run:
+	cd docker && docker-compose up -d && docker-compose -f docker-compose-monitoring.yml up -d
 
 build: ui comment post prometheus cloudprober alertmanager telegraf
 
