@@ -1,0 +1,44 @@
+version: '3'
+services:
+  fluentd:
+    image: ${USER_NAME}/fluentd
+    networks:
+      - backend
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+
+  elasticsearch:
+    image: elasticsearch:7.4.0
+    networks:
+      - backend
+    environment:
+      - node.name=es-single-node
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    expose:
+      - 9200
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: kibana:7.4.0
+    networks:
+      - backend
+      - frontend
+    ports:
+      - "5601:5601"
+
+  zipkin:
+    image: openzipkin/zipkin
+    networks:
+      - backend
+      - frontend
+    ports:
+      - "9411:9411"
+
+networks:
+  backend:
+    external: true
+  frontend:
+    external: true

@@ -5,8 +5,8 @@ services:
     ports:
       - '9090:9090'
     networks:
-      - internal_network
-      - external_network
+      - backend
+      - frontend
     volumes:
       - prometheus_data:/prometheus
     command:
@@ -18,7 +18,7 @@ services:
     image: prom/node-exporter:v0.15.2
     user: root
     networks:
-      - internal_network
+      - backend
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -31,19 +31,19 @@ services:
   mongodb_exporter:
     image: bitnami/mongodb-exporter:${MONGO_EXPORTER_VERSION}
     networks:
-      - internal_network
+      - backend
     environment:
       MONGODB_URI: "mongodb://post_db:27017"
 
   cloudprober_exporter:
     image: ${USER_NAME}/cloudprober
     networks:
-      - internal_network
+      - backend
 
   cadvisor:
     image: google/cadvisor:v0.29.0
     networks:
-      - internal_network
+      - backend
     volumes:
       - '/:/rootfs:ro'
       - '/var/run:/var/run:rw'
@@ -55,7 +55,7 @@ services:
   grafana:
     image: grafana/grafana:5.0.0
     networks:
-      - internal_network
+      - backend
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
@@ -71,14 +71,23 @@ services:
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'
     networks:
-      - internal_network
+      - backend
 
   influxdb:
     image: influxdb
     volumes:
       - influxdb_data:/var/lib/influxdb
     networks:
-      - internal_network
+      - backend
+
+  alertmanager:
+    image: ${USER_NAME}/alertmanager
+    networks:
+      - backend
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    ports:
+      - 9093:9093
 
 volumes:
   post_db:
@@ -87,7 +96,7 @@ volumes:
   influxdb_data:
 
 networks:
-  internal_network:
-    external: false
-  external_network:
+  backend:
+    external: true
+  frontend:
     external: true

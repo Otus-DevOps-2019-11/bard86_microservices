@@ -347,8 +347,8 @@ ADD prometheus.yml /etc/prometheus/
     ports:
       - '9090:9090'
     networks:
-      - internal_network
-      - external_network
+      - backend
+      - frontend
     volumes:
       - prometheus_data:/prometheus
     command:
@@ -360,7 +360,7 @@ ADD prometheus.yml /etc/prometheus/
     image: prom/node-exporter:v0.15.2
     user: root
     networks:
-      - internal_network
+      - backend
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -373,14 +373,14 @@ ADD prometheus.yml /etc/prometheus/
   mongodb_exporter:
     image: bitnami/mongodb-exporter:${MONGO_EXPORTER_VERSION}
     networks:
-      - internal_network
+      - backend
     environment:
       MONGODB_URI: "mongodb://post_db:27017"
 
   cloudprober_exporter:
     image: ${USERNAME}/cloudprober_exporter
     networks:
-      - internal_network
+      - backend
 ```
 
 -create cloudprober config
@@ -466,8 +466,192 @@ cloudprober-push:
 	docker push ${USERNAME}/cloudprober:latest
 ```
 
+--------------------------------------------------------
+
+## Monitoring-2
+
+- create new docker machine
+
+```console
+$ docker-machine create \
+    --driver google \    
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-2 \
+    --google-zone europe-west1-b \
+    docker-host
+```
+
+- add to `docker/docker-compose-monitoring.yml` definition of cAdvisor
+
+```yaml
+...
+  cadvisor:
+    image: google/cadvisor:v0.29.0
+    networks:
+      - backend
+    volumes:
+      - '/:/rootfs:ro'
+      - '/var/run:/var/run:rw'
+      - '/sys:/sys:ro'
+      - '/var/lib/docker/:/var/lib/docker:ro'
+    ports:
+      - '8080:8080'
+...
+```
+
+- add to `monitoring/prometheus/prometheus.yml`
+
+```yaml
+...
+scrape_configs:
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets:
+        - 'cadvisor:8080'
+...
+```
+
+- add to `docker/docker-compose-monitoring.yml`
+
+```yaml
+services:
+...
+  grafana:
+    image: grafana/grafana:5.0.0
+    networks:
+      - backend
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+```
+
+- add prometheus datasource, dashboards (`monitoring/grafana/DockerMonitoring.json`, `monitoring/grafana/UI_Service_Monitoring.json`) 
+- add alerting to prometheus
+
+`monitoring/alertmanager/Dockerfile`
+```dockerfile
+FROM prom/alertmanager:v0.14.0
+ADD config.yml /etc/alertmanager/
+```
+
+`monitoring/alertmanager/config.yml`
+```yaml
+global:
+  slack_api_url: 'https://hooks.slack.com/services/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'
+
+route:
+  receiver: 'slack-notifications'
+
+receivers:
+  - name: 'slack-notifications'
+    slack_configs:
+      - channel: '#denis_barsukov'
+```
+
+`docker/docker-compose-monitoring.yml`
+
+```yaml
+services:
+...
+  alertmanager:
+    image: ${USER_NAME}/alertmanager
+    networks:
+      - backend
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    ports:
+      - 9093:9093
+```
+
+- add alert rules 
+
+`monitoring/prometheus/alerts.yml`
+
+```yaml
+groups:
+  - name: alert.rules
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute'
+          summary: 'Instance {{ $labels.instance }} down'
+```
+
+`monitoring/prometheus/prometheus.yml`
+
+```yaml
+rule_files:
+  - "alerts.yml"
+
+alerting:
+  alertmanagers:
+    - scheme: http
+      static_configs:
+        - targets:
+            - "alertmanager:9093"
+```
+
+- docker metrics (experimental feature)
+
+`/etc/docker/daemon.json` @ docker-host
+
+```json
+{
+  "metrics-addr" : "0.0.0.0:9323",
+  "experimental" : true
+}
+```
+
+`monitoring/prometheus/prometheus.yml`
+
+```yaml
+...
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['35.240.56.5:9323']
+```
+
+- add Telegraf
+
+`docker/docker-compose-monitoring.yml`
+
+```yaml
+services:
+...
+  influxdb:
+    image: influxdb
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    networks:
+      - backend
+```
+
+`monitoring/prometheus/prometheus.yml`
+
+```yaml
+  - job_name: 'telegraf'
+    static_configs:
+      - targets: ['telegraf:9126']
+```
+
+
+
+it may be useful to know this commands if you want to read new config (daemon.json) without restarting docker daemon: 
+```console
 sudo kill -SIGHUP $(pidof dockerd)
 tail /var/log/syslog
-
 systemctl status docker
 journalctl -xe
+```
+
+- build new docker images and push them to docker hub `$ make build push`
