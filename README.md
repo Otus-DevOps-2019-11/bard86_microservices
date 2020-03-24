@@ -644,8 +644,6 @@ services:
       - targets: ['telegraf:9126']
 ```
 
-
-
 it may be useful to know this commands if you want to read new config (daemon.json) without restarting docker daemon: 
 ```console
 sudo kill -SIGHUP $(pidof dockerd)
@@ -655,3 +653,171 @@ journalctl -xe
 ```
 
 - build new docker images and push them to docker hub `$ make build push`
+
+--------------------------------------------------------
+
+## Logging-1
+
+- create new docker machine
+
+```console
+$ docker-machine create --driver google \
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-1 \
+    --google-open-port 5601/tcp \
+    --google-open-port 9292/tcp \
+    --google-open-port 9411/tcp \
+    logging
+
+# configure local env
+$ eval $(docker-machine env logging)
+
+# show ip address
+$ docker-machine ip logging
+```
+
+### EFK (Elasticsearch-Fluent-Kibana) 
+
+- create `docker/docker-compose-logging.yml`
+
+```yaml
+version: '3'
+services:
+  fluentd:
+    image: ${USER_NAME}/fluentd
+    networks:
+      - backend
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+
+  elasticsearch:
+    image: elasticsearch:7.4.0
+    networks:
+      - backend
+    environment:
+      - node.name=es-single-node
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    expose:
+      - 9200
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: kibana:7.4.0
+    networks:
+      - backend
+      - frontend
+    ports:
+      - "5601:5601"
+
+networks:
+  backend:
+    external: true
+  frontend:
+    external: true
+```
+
+- create Dockerfile for fluentd
+
+```dockerfile
+FROM fluent/fluentd:v0.12
+RUN gem install fluent-plugin-elasticsearch --no-rdoc --no-ri --version 1.9.5
+RUN gem install fluent-plugin-grok-parser --no-rdoc --no-ri --version 1.0.0
+ADD fluent.conf /fluentd/etc
+```
+
+- define basic fluentd configuration
+
+```
+<source>
+  @type forward
+  port 24224
+  bind 0.0.0.0
+</source>
+
+<match *.**>
+  @type copy
+  <store>
+    @type elasticsearch
+    host elasticsearch
+    port 9200
+    logstash_format true
+    logstash_prefix fluentd
+    logstash_dateformat %Y%m%d
+    include_tag_key true
+    type_name access_log
+    tag_key @log_name
+    flush_interval 1s
+  </store>
+  <store>
+    @type stdout
+  </store>
+</match>
+```
+
+- add fluentd logging driver to "post" docker container
+
+```yaml
+services:
+...
+  post:
+...
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.post
+``` 
+
+- add data index in kibana and analize logs
+
+- add filter to parse json logs with GROK patterns (fluentd.conf)
+
+```
+<filter service.ui>
+  @type parser
+  key_name log
+  format grok
+  grok_pattern %{RUBY_LOGGER}
+</filter>
+
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern service=%{WORD:service} \| event=%{WORD:event} \| request_id=%{GREEDYDATA:request_id} \| message='%{GREEDYDATA:message}'
+  key_name message
+  reserve_data true
+</filter>
+```
+
+### Zipkin
+
+- add Zipkin to docker-compose file 
+
+`docker/docker-compose-logging.yml`
+
+```yaml
+services:
+...
+  zipkin:
+    image: openzipkin/zipkin
+    networks:
+      - backend
+      - frontend
+    ports:
+      - "9411:9411"
+```
+
+- enable Zipkin in apps by adding param to env
+
+```yaml
+    environment:
+      - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
+```
+
+`docker/.env`
+```
+ZIPKIN_ENABLED = true
+```
