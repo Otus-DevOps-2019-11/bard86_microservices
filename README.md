@@ -739,8 +739,8 @@ ADD fluent.conf /fluentd/etc
 
 <match *.**>
   @type copy
-  <store>
     @type elasticsearch
+  <store>
     host elasticsearch
     port 9200
     logstash_format true
