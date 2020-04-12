@@ -15,6 +15,7 @@ GEM
     haml (5.0.2)
       temple (>= 0.8.0)
       tilt
+    json (2.3.0)
     multi_json (1.13.1)
     multipart-post (2.0.0)
     mustermann (1.0.2)
@@ -62,6 +63,7 @@ DEPENDENCIES
   bson_ext
   faraday
   haml
+  json
   prometheus-client
   puma
   rack

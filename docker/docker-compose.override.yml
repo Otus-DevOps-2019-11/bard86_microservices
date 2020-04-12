@@ -1,11 +1,14 @@
 version: '3.3'
 services:
   ui:
+    environment:
+      - ENV=${ENV}
     command: puma --debug -w 2
     volumes:
       - volume_ui_app:/app
 
   comment:
+    command: puma --debug -w 2
     volumes:
       - volume_comment_app:/app
 

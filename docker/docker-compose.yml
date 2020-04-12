@@ -5,41 +5,46 @@ services:
     volumes:
       - post_db:/data/db
     networks:
-      - backend
+      - back_net
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.post_db
+
+  comment_db:
+    image: mongo:${MONGO_IMAGE_VERSION}
+    volumes:
+      - comment_db:/data/db
+    networks:
+      - back_net
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.comment_db
 
   ui:
     image: ${USER_NAME}/ui:${UI_IMAGE_VERSION}
     environment:
-      - POST_SERVICE_HOST=post
-      - POST_SERVICE_PORT=5000
-      - COMMENT_SERVICE_HOST=comment
-      - COMMENT_SERVICE_PORT=9292
       - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
     ports:
       - ${PUMA_PORT}:${PUMA_PORT}/tcp
-    depends_on:
-      - post
+    networks:
+      - front_net
+      - back_net
     logging:
       driver: "fluentd"
       options:
         fluentd-address: localhost:24224
         tag: service.ui
-    networks:
-      - frontend
-      - backend
 
   post:
     image: ${USER_NAME}/post:${POST_IMAGE_VERSION}
-    networks:
-      - backend
     environment:
-      - POST_DATABASE_HOST=post_db
-      - POST_DATABASE=posts
       - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
-    depends_on:
-      - post_db
-    ports:
-      - "5000:5000"
+    networks:
+      - back_net
     logging:
       driver: "fluentd"
       options:
@@ -48,17 +53,26 @@ services:
 
   comment:
     image: ${USER_NAME}/comment:${COMMENT_IMAGE_VERSION}
-    networks:
-      - backend
     environment:
       - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
+    networks:
+      - back_net
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.comment
 
 volumes:
   post_db:
-  prometheus_data:
+  comment_db:
 
 networks:
-  backend:
-    external: true
-  frontend:
-    external: true
+  front_net:
+    ipam:
+      config:
+        - subnet: 10.0.1.0/24
+  back_net:
+    ipam:
+      config:
+        - subnet: 10.0.2.0/24
