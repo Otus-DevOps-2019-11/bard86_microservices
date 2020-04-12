@@ -281,7 +281,7 @@ docker-compose ps
 ## Gitlab-CI
 
 - add pipeline definition `.gitlab-ci.yml`
-- after push commit to gitlab ci repo we can build app docker image, run tests, save image at docker hub, deploy app to new temporary instance, deploy app to dev/stage/prod envs     
+- after push commit to gitlab ci repo we can build app docker image, run tests, save image at docker hub, deploy app to new temporary instance, deploy app to dev/stage/prod envs
 - temporary instance will be remove after 1 week or if review has been finished
 - every pipeline run will be finished with cleanup job (it will save disk space at runners)
 - we can create as many runners as we want by running terraform plus ansible
@@ -466,6 +466,12 @@ cloudprober-push:
 	docker push ${USERNAME}/cloudprober:latest
 ```
 
+sudo kill -SIGHUP $(pidof dockerd)
+tail /var/log/syslog
+
+systemctl status docker
+journalctl -xe
+
 --------------------------------------------------------
 
 ## Monitoring-2
@@ -474,7 +480,7 @@ cloudprober-push:
 
 ```console
 $ docker-machine create \
-    --driver google \    
+    --driver google \
     --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
     --google-machine-type n1-standard-2 \
     --google-zone europe-west1-b \
@@ -531,7 +537,7 @@ services:
       - 3000:3000
 ```
 
-- add prometheus datasource, dashboards (`monitoring/grafana/DockerMonitoring.json`, `monitoring/grafana/UI_Service_Monitoring.json`) 
+- add prometheus datasource, dashboards (`monitoring/grafana/DockerMonitoring.json`, `monitoring/grafana/UI_Service_Monitoring.json`)
 - add alerting to prometheus
 
 `monitoring/alertmanager/Dockerfile`
@@ -569,7 +575,7 @@ services:
       - 9093:9093
 ```
 
-- add alert rules 
+- add alert rules
 
 `monitoring/prometheus/alerts.yml`
 
@@ -644,7 +650,7 @@ services:
       - targets: ['telegraf:9126']
 ```
 
-it may be useful to know this commands if you want to read new config (daemon.json) without restarting docker daemon: 
+it may be useful to know this commands if you want to read new config (daemon.json) without restarting docker daemon:
 ```console
 sudo kill -SIGHUP $(pidof dockerd)
 tail /var/log/syslog
@@ -676,7 +682,7 @@ $ eval $(docker-machine env logging)
 $ docker-machine ip logging
 ```
 
-### EFK (Elasticsearch-Fluent-Kibana) 
+### EFK (Elasticsearch-Fluent-Kibana)
 
 - create `docker/docker-compose-logging.yml`
 
@@ -769,7 +775,7 @@ services:
       options:
         fluentd-address: localhost:24224
         tag: service.post
-``` 
+```
 
 - add data index in kibana and analize logs
 
@@ -794,7 +800,7 @@ services:
 
 ### Zipkin
 
-- add Zipkin to docker-compose file 
+- add Zipkin to docker-compose file
 
 `docker/docker-compose-logging.yml`
 
@@ -822,5 +828,4 @@ services:
 ZIPKIN_ENABLED = true
 ```
 
-- open port in firewall `gcloud compute firewall-rules create zipkin-default --allow tcp:9411 --project=docker-267311` 
-
+- open port in firewall `gcloud compute firewall-rules create zipkin-default --allow tcp:9411 --project=docker-267311`
