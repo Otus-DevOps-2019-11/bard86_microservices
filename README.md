@@ -864,3 +864,18 @@ spec:
 ```
 
 `kubectl apply -f <filename>`
+
+```console
+$ kubectl get pods
+NAME                                  READY   STATUS    RESTARTS   AGE
+busybox                               1/1     Running   66         2d17h
+comment-deployment-548bfc4d49-zzm6c   1/1     Running   0          12m
+mongo-deployment-86d49445c4-j9lkw     1/1     Running   0          12m
+nginx-554b9c67f9-r2929                1/1     Running   1          2d17h
+post-deployment-7bc8df4f55-k9bfq      1/1     Running   0          10m
+ui-deployment-574f49d6c9-582hr        1/1     Running   0          40s
+```
+
+Cheatsheet:
+
+[https://kubernetes.io/ru/docs/reference/kubectl/cheatsheet/](https://kubernetes.io/ru/docs/reference/kubectl/cheatsheet/)
