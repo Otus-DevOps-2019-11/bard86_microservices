@@ -5,50 +5,74 @@ services:
     volumes:
       - post_db:/data/db
     networks:
-      - backend
+      - back_net
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.post_db
+
+  comment_db:
+    image: mongo:${MONGO_IMAGE_VERSION}
+    volumes:
+      - comment_db:/data/db
+    networks:
+      - back_net
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.comment_db
 
   ui:
     image: ${USER_NAME}/ui:${UI_IMAGE_VERSION}
+    environment:
+      - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
     ports:
       - ${PUMA_PORT}:${PUMA_PORT}/tcp
     networks:
-      - frontend
-      - backend
+      - front_net
+      - back_net
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.ui
 
   post:
     image: ${USER_NAME}/post:${POST_IMAGE_VERSION}
+    environment:
+      - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
     networks:
-      - backend
+      - back_net
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.post
 
   comment:
     image: ${USER_NAME}/comment:${COMMENT_IMAGE_VERSION}
+    environment:
+      - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
     networks:
-      - backend
-
-  alertmanager:
-    image: ${USER_NAME}/alertmanager
-    networks:
-      - internal_network
-    command:
-      - '--config.file=/etc/alertmanager/config.yml'
-    ports:
-      - 9093:9093
-
-  alertmanager:
-    image: ${USER_NAME}/alertmanager
-    networks:
-      - internal_network
-    command:
-      - '--config.file=/etc/alertmanager/config.yml'
-    ports:
-      - 9093:9093
+      - back_net
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.comment
 
 volumes:
   post_db:
-  prometheus_data:
+  comment_db:
 
 networks:
-  backend:
-    external: true
-  frontend:
-    external: true
+  front_net:
+    ipam:
+      config:
+        - subnet: 10.0.1.0/24
+  back_net:
+    ipam:
+      config:
+        - subnet: 10.0.2.0/24

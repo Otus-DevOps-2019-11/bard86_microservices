@@ -7,7 +7,5 @@
 .variables.json
 .env
 build_info.txt
-prometheus/
-
-## python specific
+.idea/
 *.pyc

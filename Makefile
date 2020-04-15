@@ -8,7 +8,11 @@ info:
 
 all: build push run
 
-run: run-app run-monitoring
+
+run: run-logging run-app run-monitoring
+
+run-logging:
+	cd docker && docker-compose -f docker-compose-logging.yml up -d
 
 run-monitoring:
 	cd docker && docker-compose -f docker-compose-monitoring.yml up -d
@@ -16,7 +20,11 @@ run-monitoring:
 run-app:
 	cd docker && docker-compose up -d
 
-stop: stop-app stop-monitoring
+
+stop: stop-app stop-monitoring stop-logging
+
+stop-logging:
+	cd docker && docker-compose -f docker-compose-logging.yml down
 
 stop-app:
 	cd docker && docker-compose down
@@ -24,7 +32,11 @@ stop-app:
 stop-monitoring:
 	cd docker && docker-compose -f docker-compose-monitoring.yml down
 
-build: ui comment post prometheus cloudprober alertmanager telegraf
+
+build: ui comment post prometheus cloudprober alertmanager telegraf fluentd
+
+fluentd:
+	cd logging/fluentd && docker build -t ${USER_NAME}/fluentd .
 
 ui:
 	cd src/ui && bash docker_build.sh
@@ -47,7 +59,11 @@ alertmanager:
 telegraf:
 	cd monitoring/telegraf && docker build -t ${USER_NAME}/telegraf .
 
-push: ui-push comment-push post-push prometheus-push cloudprober-push alertmanager-push telegraf-push
+
+push: ui-push comment-push post-push prometheus-push cloudprober-push alertmanager-push telegraf-push fluentd-push
+
+fluentd-push:
+	docker push ${USER_NAME}/fluentd:latest
 
 ui-push:
 	docker push ${USER_NAME}/ui:latest
@@ -69,4 +85,3 @@ alertmanager-push:
 
 telegraf-push:
 	docker push ${USER_NAME}/telegraf:latest
-

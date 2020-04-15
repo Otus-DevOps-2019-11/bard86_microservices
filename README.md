@@ -281,7 +281,7 @@ docker-compose ps
 ## Gitlab-CI
 
 - add pipeline definition `.gitlab-ci.yml`
-- after push commit to gitlab ci repo we can build app docker image, run tests, save image at docker hub, deploy app to new temporary instance, deploy app to dev/stage/prod envs     
+- after push commit to gitlab ci repo we can build app docker image, run tests, save image at docker hub, deploy app to new temporary instance, deploy app to dev/stage/prod envs
 - temporary instance will be remove after 1 week or if review has been finished
 - every pipeline run will be finished with cleanup job (it will save disk space at runners)
 - we can create as many runners as we want by running terraform plus ansible
@@ -347,8 +347,8 @@ ADD prometheus.yml /etc/prometheus/
     ports:
       - '9090:9090'
     networks:
-      - internal_network
-      - external_network
+      - backend
+      - frontend
     volumes:
       - prometheus_data:/prometheus
     command:
@@ -360,7 +360,7 @@ ADD prometheus.yml /etc/prometheus/
     image: prom/node-exporter:v0.15.2
     user: root
     networks:
-      - internal_network
+      - backend
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -373,14 +373,14 @@ ADD prometheus.yml /etc/prometheus/
   mongodb_exporter:
     image: bitnami/mongodb-exporter:${MONGO_EXPORTER_VERSION}
     networks:
-      - internal_network
+      - backend
     environment:
       MONGODB_URI: "mongodb://post_db:27017"
 
   cloudprober_exporter:
     image: ${USERNAME}/cloudprober_exporter
     networks:
-      - internal_network
+      - backend
 ```
 
 -create cloudprober config
@@ -471,3 +471,361 @@ tail /var/log/syslog
 
 systemctl status docker
 journalctl -xe
+
+--------------------------------------------------------
+
+## Monitoring-2
+
+- create new docker machine
+
+```console
+$ docker-machine create \
+    --driver google \
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-2 \
+    --google-zone europe-west1-b \
+    docker-host
+```
+
+- add to `docker/docker-compose-monitoring.yml` definition of cAdvisor
+
+```yaml
+...
+  cadvisor:
+    image: google/cadvisor:v0.29.0
+    networks:
+      - backend
+    volumes:
+      - '/:/rootfs:ro'
+      - '/var/run:/var/run:rw'
+      - '/sys:/sys:ro'
+      - '/var/lib/docker/:/var/lib/docker:ro'
+    ports:
+      - '8080:8080'
+...
+```
+
+- add to `monitoring/prometheus/prometheus.yml`
+
+```yaml
+...
+scrape_configs:
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets:
+        - 'cadvisor:8080'
+...
+```
+
+- add to `docker/docker-compose-monitoring.yml`
+
+```yaml
+services:
+...
+  grafana:
+    image: grafana/grafana:5.0.0
+    networks:
+      - backend
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+```
+
+- add prometheus datasource, dashboards (`monitoring/grafana/DockerMonitoring.json`, `monitoring/grafana/UI_Service_Monitoring.json`)
+- add alerting to prometheus
+
+`monitoring/alertmanager/Dockerfile`
+```dockerfile
+FROM prom/alertmanager:v0.14.0
+ADD config.yml /etc/alertmanager/
+```
+
+`monitoring/alertmanager/config.yml`
+```yaml
+global:
+  slack_api_url: 'https://hooks.slack.com/services/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'
+
+route:
+  receiver: 'slack-notifications'
+
+receivers:
+  - name: 'slack-notifications'
+    slack_configs:
+      - channel: '#denis_barsukov'
+```
+
+`docker/docker-compose-monitoring.yml`
+
+```yaml
+services:
+...
+  alertmanager:
+    image: ${USER_NAME}/alertmanager
+    networks:
+      - backend
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    ports:
+      - 9093:9093
+```
+
+- add alert rules
+
+`monitoring/prometheus/alerts.yml`
+
+```yaml
+groups:
+  - name: alert.rules
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute'
+          summary: 'Instance {{ $labels.instance }} down'
+```
+
+`monitoring/prometheus/prometheus.yml`
+
+```yaml
+rule_files:
+  - "alerts.yml"
+
+alerting:
+  alertmanagers:
+    - scheme: http
+      static_configs:
+        - targets:
+            - "alertmanager:9093"
+```
+
+- docker metrics (experimental feature)
+
+`/etc/docker/daemon.json` @ docker-host
+
+```json
+{
+  "metrics-addr" : "0.0.0.0:9323",
+  "experimental" : true
+}
+```
+
+`monitoring/prometheus/prometheus.yml`
+
+```yaml
+...
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['35.240.56.5:9323']
+```
+
+- add Telegraf
+
+`docker/docker-compose-monitoring.yml`
+
+```yaml
+services:
+...
+  influxdb:
+    image: influxdb
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    networks:
+      - backend
+```
+
+`monitoring/prometheus/prometheus.yml`
+
+```yaml
+  - job_name: 'telegraf'
+    static_configs:
+      - targets: ['telegraf:9126']
+```
+
+it may be useful to know this commands if you want to read new config (daemon.json) without restarting docker daemon:
+```console
+sudo kill -SIGHUP $(pidof dockerd)
+tail /var/log/syslog
+systemctl status docker
+journalctl -xe
+```
+
+- build new docker images and push them to docker hub `$ make build push`
+
+--------------------------------------------------------
+
+## Logging-1
+
+- create new docker machine
+
+```console
+$ docker-machine create --driver google \
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-1 \
+    --google-open-port 5601/tcp \
+    --google-open-port 9292/tcp \
+    --google-open-port 9411/tcp \
+    logging
+
+# configure local env
+$ eval $(docker-machine env logging)
+
+# show ip address
+$ docker-machine ip logging
+```
+
+### EFK (Elasticsearch-Fluent-Kibana)
+
+- create `docker/docker-compose-logging.yml`
+
+```yaml
+version: '3'
+services:
+  fluentd:
+    image: ${USER_NAME}/fluentd
+    networks:
+      - backend
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+
+  elasticsearch:
+    image: elasticsearch:7.4.0
+    networks:
+      - backend
+    environment:
+      - node.name=es-single-node
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    expose:
+      - 9200
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: kibana:7.4.0
+    networks:
+      - backend
+      - frontend
+    ports:
+      - "5601:5601"
+
+networks:
+  backend:
+    external: true
+  frontend:
+    external: true
+```
+
+- create Dockerfile for fluentd
+
+```dockerfile
+FROM fluent/fluentd:v0.12
+RUN gem install fluent-plugin-elasticsearch --no-rdoc --no-ri --version 1.9.5
+RUN gem install fluent-plugin-grok-parser --no-rdoc --no-ri --version 1.0.0
+ADD fluent.conf /fluentd/etc
+```
+
+- define basic fluentd configuration
+
+```
+<source>
+  @type forward
+  port 24224
+  bind 0.0.0.0
+</source>
+
+<match *.**>
+  @type copy
+    @type elasticsearch
+  <store>
+    host elasticsearch
+    port 9200
+    logstash_format true
+    logstash_prefix fluentd
+    logstash_dateformat %Y%m%d
+    include_tag_key true
+    type_name access_log
+    tag_key @log_name
+    flush_interval 1s
+  </store>
+  <store>
+    @type stdout
+  </store>
+</match>
+```
+
+- add fluentd logging driver to "post" docker container
+
+```yaml
+services:
+...
+  post:
+...
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.post
+```
+
+- add data index in kibana and analize logs
+
+- add filter to parse json logs with GROK patterns (fluentd.conf)
+
+```
+<filter service.ui>
+  @type parser
+  key_name log
+  format grok
+  grok_pattern %{RUBY_LOGGER}
+</filter>
+
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern service=%{WORD:service} \| event=%{WORD:event} \| request_id=%{GREEDYDATA:request_id} \| message='%{GREEDYDATA:message}'
+  key_name message
+  reserve_data true
+</filter>
+```
+
+### Zipkin
+
+- add Zipkin to docker-compose file
+
+`docker/docker-compose-logging.yml`
+
+```yaml
+services:
+...
+  zipkin:
+    image: openzipkin/zipkin
+    networks:
+      - backend
+      - frontend
+    ports:
+      - "9411:9411"
+```
+
+- enable Zipkin in apps by adding param to env
+
+```yaml
+    environment:
+      - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
+```
+
+`docker/.env`
+```
+ZIPKIN_ENABLED = true
+```
+
+- open port in firewall `gcloud compute firewall-rules create zipkin-default --allow tcp:9411 --project=docker-267311`
