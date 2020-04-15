@@ -135,7 +135,7 @@ https://hub.docker.com/repository/docker/dbarsukov/otus-reddit/general
  - add playbook for running container with `reddit-app`
  - add packer script for creating image with docker
 
---------------------------------------------------------
+<hr>
 
 ## Docker - 3
 
@@ -197,7 +197,7 @@ docker pull hadolint/hadolint
 docker run --rm -i hadolint/hadolint < Dockerfile
 ```
 
---------------------------------------------------------
+<hr>
 
 ## Docker - 4
 
@@ -276,7 +276,7 @@ docker-compose --project-name=reddit up -d
 docker-compose ps
 ```
 
---------------------------------------------------------
+<hr>
 
 ## Gitlab-CI
 
@@ -288,7 +288,7 @@ docker-compose ps
 - integrate gitlab-ci with slack. now we can receive events and alerts to personal channel (https://devops-team-otus.slack.com/archives/CRGMFUEKT)
 
 
---------------------------------------------------------
+<hr>
 
 ## Monitoring-1
 
@@ -472,7 +472,7 @@ tail /var/log/syslog
 systemctl status docker
 journalctl -xe
 
---------------------------------------------------------
+<hr>
 
 ## Monitoring-2
 
@@ -660,7 +660,7 @@ journalctl -xe
 
 - build new docker images and push them to docker hub `$ make build push`
 
---------------------------------------------------------
+<hr>
 
 ## Logging-1
 
@@ -829,3 +829,53 @@ ZIPKIN_ENABLED = true
 ```
 
 - open port in firewall `gcloud compute firewall-rules create zipkin-default --allow tcp:9411 --project=docker-267311`
+
+<hr>
+
+## Kubernetes-1
+
+How to deploy cluster:
+
+[https://github.com/kelseyhightower/kubernetes-the-hard-way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
+
+App deployment:
+
+mongo-deployment.yaml
+```yaml
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: mongo-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      name: mongo
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - image: mongo:3.2
+          name: mongo
+```
+
+`kubectl apply -f <filename>`
+
+```console
+$ kubectl get pods
+NAME                                  READY   STATUS    RESTARTS   AGE
+busybox                               1/1     Running   66         2d17h
+comment-deployment-548bfc4d49-zzm6c   1/1     Running   0          12m
+mongo-deployment-86d49445c4-j9lkw     1/1     Running   0          12m
+nginx-554b9c67f9-r2929                1/1     Running   1          2d17h
+post-deployment-7bc8df4f55-k9bfq      1/1     Running   0          10m
+ui-deployment-574f49d6c9-582hr        1/1     Running   0          40s
+```
+
+Cheatsheet:
+
+[https://kubernetes.io/ru/docs/reference/kubectl/cheatsheet/](https://kubernetes.io/ru/docs/reference/kubectl/cheatsheet/)
