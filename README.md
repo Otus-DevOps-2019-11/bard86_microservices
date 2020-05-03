@@ -266,6 +266,8 @@ ps ax | grep docker-proxy
 
 ### Docker-compose
 
+[https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
+
 - pip install docker-compose
 - create `docker-compose.yml` to describe how to build images and run containers with specific order
 - create `.env` file for storing parameters like port, user name, image version
@@ -843,7 +845,7 @@ App deployment:
 mongo-deployment.yaml
 ```yaml
 ---
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mongo-deployment
