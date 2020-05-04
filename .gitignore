@@ -5,6 +5,7 @@
 .terraform/
 .terraform.tfstate.lock.info
 .variables.json
+variables.tf
 .env
 build_info.txt
 .idea/

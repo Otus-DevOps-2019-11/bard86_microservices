@@ -881,3 +881,46 @@ ui-deployment-574f49d6c9-582hr        1/1     Running   0          40s
 Cheatsheet:
 
 [https://kubernetes.io/ru/docs/reference/kubectl/cheatsheet/](https://kubernetes.io/ru/docs/reference/kubectl/cheatsheet/)
+
+
+## Kubernetes-2
+
+[Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+[Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+
+`minikube [command]`
+```console
+Minikube Basic Commands:
+  start          Starts a local kubernetes cluster
+  status         Gets the status of a local kubernetes cluster
+  stop           Stops a running local kubernetes cluster
+  delete         Deletes a local kubernetes cluster
+  dashboard      Access the kubernetes dashboard running within the minikube cluster
+  pause          pause containers
+  unpause        unpause Kubernetes
+```
+
+Show kubectl contexts `cat ~/.kube/config` or `kubectl config get-contexts`
+
+Three steps to configure kubectl context:
+
+1. cluster configuration `kubectl config set-cluster ...`
+2. user credentials `kubectl config set-credentials ...`
+3. context (context name + cluster name + user name) `kubectl config set-context <context_name> --cluster=<cluster_name> --user=<user_name>`
+
+Use or switch context: `kubectl config use-context context_name`
+Display current conext: `kubectl config current-context`
+Apply manifest: `kubectl apply -f some.yml` or `kubectl apply -f some/path/to/dir`
+List of Pods: `kubectl get pods [--selector label=value]`
+List of Deployments: `kubectl get deployment`
+Service list: `minikube services list`
+Information about service: `kubectl describe service <service>`
+Port forwarding: `kubectl port-forward <pod> extPort:podPort`
+Display logs: `kubectl logs <pod>`
+Exec some command: `kubectl exec -ti <pod> nslookup <host>`
+Addons list: `minikube addons list`
+
+Examples of Services, Deployments and Namespaces declaration are in kubernetes/reddit folder.
+
+Useful links:
+- [Terraform GKE module](https://www.terraform.io/docs/providers/google/r/container_cluster.html)
