@@ -1,0 +1,10 @@
+project            = "docker-123456"
+region             = "europe-west3"
+zone               = "europe-west3-b"
+cluster_name       = "my-cluster"
+cluster_node_count = 2
+pool_name          = "my-nodes-pool"
+pool_node_count    = 2
+tags               = ["k8s-nodes"]
+source_ranges      = ["0.0.0.0/0"]
+ports              = ["30000-32767"]
