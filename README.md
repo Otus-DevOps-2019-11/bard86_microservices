@@ -924,3 +924,58 @@ Examples of Services, Deployments and Namespaces declaration are in kubernetes/r
 
 Useful links:
 - [Terraform GKE module](https://www.terraform.io/docs/providers/google/r/container_cluster.html)
+
+## Kubernetes-3
+
+experiment with kube-dns:
+
+```console
+kubectl scale deployment --replicas 0 -n kube-system kube-dns-autoscaler
+kubectl scale deployment --replicas 0 -n kube-system kube-dns
+kubectl exec -ti -n dev <any_pod_name> ping comment
+kubectl scale deployment --replicas 1 -n kube-system kube-dns-autoscaler
+```
+
+Service types:
+ - ClusterIP (default)
+ - NodePort
+ - LoadBalancer
+ - ExternalName
+
+> To inspect the contents of your cluster, go to: https://console.cloud.google.com/kubernetes/workload_/gcloud/europe-west3-c/cluster-1?project=docker-267311
+
+Secrets:
+
+```console
+kubectl get ingress -n dev
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=35.190.66.90"
+kubectl create secret tls ui-ingress --key tls.key --cert tls.crt -n dev
+kubectl describe secret ui-ingress -n dev
+kubectl get secret ui-ingress -n dev -o yaml
+```
+
+Network policy:
+
+```console
+gcloud beta container clusters list
+gcloud beta container clusters update <cluster-name> --zone=europe-west3-c --update-addons=NetworkPolicy=ENABLED
+gcloud beta container clusters update <cluster-name> --zone=europe-west3-c --enable-network-policy
+```
+
+Volumes:
+
+```console
+gcloud compute disks create --size=25GB --zone=europe-west3-c reddit-mongo-disk
+```
+
+PersistentVolume:
+
+```console
+kubectl describe storageclass standard -n dev
+kubectl get persistentvolume -n dev
+```
+
+#### Useful links
+
+- [GKE route rules](https://console.cloud.google.com/networking/routes/)
+- [Compute disks](https://console.cloud.google.com/compute/disks)
