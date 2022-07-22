@@ -15,7 +15,6 @@ GEM
     haml (5.0.2)
       temple (>= 0.8.0)
       tilt
-    json (2.3.0)
     multi_json (1.13.1)
     multipart-post (2.0.0)
     mustermann (1.0.2)
@@ -43,11 +42,10 @@ GEM
     sucker_punch (2.0.4)
       concurrent-ruby (~> 1.0.0)
     temple (0.8.0)
-    thread_safe (0.3.6)
     thrift (0.9.3.0)
     tilt (2.0.8)
-    tzinfo (1.2.3)
-      thread_safe (~> 0.1)
+    tzinfo (2.0.5)
+      concurrent-ruby (~> 1.0)
     tzinfo-data (1.2017.3)
       tzinfo (>= 1.0.0)
     zipkin-tracer (0.27.1)
@@ -63,7 +61,6 @@ DEPENDENCIES
   bson_ext
   faraday
   haml
-  json
   prometheus-client
   puma
   rack
